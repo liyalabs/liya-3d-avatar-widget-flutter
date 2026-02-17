@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/liya3d_api_response.dart';
 import '../models/liya3d_avatar_speech.dart';
