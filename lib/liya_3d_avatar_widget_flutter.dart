@@ -40,3 +40,4 @@ export 'src/i18n/liya3d_translations.dart';
 // Utils
 export 'src/utils/liya3d_colors.dart';
 export 'src/utils/liya3d_glass_decoration.dart';
+export 'src/utils/liya3d_tts_utils.dart';

@@ -5,6 +5,8 @@ A Flutter package that provides a 3D talking AI avatar widget with real-time lip
 [![pub.dev](https://img.shields.io/pub/v/liya_3d_avatar_widget_flutter.svg)](https://pub.dev/packages/liya_3d_avatar_widget_flutter)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **[Live Demo (Web) →](https://ai.liyalabs.com)** &nbsp;|&nbsp; **[Website →](https://liyalabs.com)**
+
 ## Features
 
 - 🎭 **3D Avatar** — High-quality 3D avatar with Ready Player Me support
@@ -18,7 +20,23 @@ A Flutter package that provides a 3D talking AI avatar widget with real-time lip
 
 ## Screenshots
 
-<!-- Add screenshots here -->
+### Standard Mode
+
+| Chat Panel | Avatar Speaking |
+|------------|----------------|
+| ![Standard Mode](screenshots/standard-mode.png) | ![Avatar Speaking](screenshots/avatar-speaking.png) |
+
+### Kiosk Mode (Full Screen)
+
+| Kiosk Mode | Chat Interaction |
+|------------|------------------|
+| ![Kiosk Mode](screenshots/kiosk-mode.png) | ![Kiosk Chat](screenshots/kiosk-chat.png) |
+
+### Modal Kiosk Mode
+
+| Modal Open | Modal Speaking |
+|------------|---------------|
+| ![Modal Mode](screenshots/modal-mode.png) | ![Modal Speaking](screenshots/modal-speaking.png) |
 
 ## Installation
 
@@ -356,12 +374,20 @@ final config = jsonDecode(response.body)['data'];
 // config['base_url'] contains your dynamic backend URL
 ```
 
+## Live Demo
+
+See the Liya AI platform and avatar widget in action:
+
+- **Web Platform**: [ai.liyalabs.com](https://ai.liyalabs.com) — Create an assistant and experience the 3D avatar chat (same backend powers this Flutter widget)
+- **Website**: [liyalabs.com](https://liyalabs.com) — Learn more about Liya AI capabilities
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ## Support
 
+- 🌐 Website: [liyalabs.com](https://liyalabs.com)
+- 📖 Documentation: [docs.liyalabs.com](https://docs.liyalabs.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/liyalabs/liya_3d_avatar_widget_flutter/issues)
 - 📧 Email: support@liyalabs.com
-- 🌐 Website: https://liyalabs.com
-- 📖 Docs: https://docs.liyalabs.com

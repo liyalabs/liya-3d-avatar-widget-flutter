@@ -38,6 +38,9 @@ dependencies:
   
   # Runtime permissions (Android)
   permission_handler: ^11.3.0
+  
+  # URL Launcher (for clickable links in chat)
+  url_launcher: ^6.2.0
 
 dev_dependencies:
   flutter_test:

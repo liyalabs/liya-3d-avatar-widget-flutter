@@ -11,6 +11,7 @@ import '../controllers/liya3d_avatar_controller.dart';
 import '../controllers/liya3d_voice_controller.dart';
 import '../i18n/liya3d_translations.dart';
 import '../utils/liya3d_colors.dart';
+import '../utils/liya3d_tts_utils.dart';
 import 'liya3d_toggle_button.dart';
 import 'liya3d_header.dart';
 import 'liya3d_message_list.dart';
@@ -271,9 +272,9 @@ class _Liya3dAvatarWidgetState extends State<Liya3dAvatarWidget>
   void _onAssistantMessage(Liya3dMessage message) {
     widget.onMessageReceived?.call(message.content);
 
-    // Auto-speak
+    // Auto-speak — strip markdown/URLs for clean TTS
     if (widget.autoSpeak && message.content.isNotEmpty) {
-      _avatarController.speak(message.content);
+      _avatarController.speak(Liya3dTtsUtils.stripForTTS(message.content));
     }
   }
 
@@ -338,7 +339,7 @@ class _Liya3dAvatarWidgetState extends State<Liya3dAvatarWidget>
   void _handleReplay() {
     final lastMessage = _chatController.lastAssistantMessage;
     if (lastMessage != null && lastMessage.content.isNotEmpty) {
-      _avatarController.speak(lastMessage.content);
+      _avatarController.speak(Liya3dTtsUtils.stripForTTS(lastMessage.content));
     }
   }
 

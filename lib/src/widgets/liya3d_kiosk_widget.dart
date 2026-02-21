@@ -14,6 +14,7 @@ import '../controllers/liya3d_voice_controller.dart';
 import '../i18n/liya3d_translations.dart';
 import '../utils/liya3d_colors.dart';
 import '../utils/liya3d_glass_decoration.dart';
+import '../utils/liya3d_tts_utils.dart';
 import 'liya3d_avatar_webview.dart';
 
 /// Kiosk mode widget (matches Vue.js AvatarModal.vue layout)
@@ -261,7 +262,7 @@ class _Liya3dKioskWidgetState extends State<Liya3dKioskWidget> {
   void _onAssistantMessage(Liya3dMessage message) {
     widget.onMessageReceived?.call(message.content);
     
-    // Speak with typewriter effect
+    // Speak with typewriter effect — strip markdown/URLs for clean TTS
     if (message.content.isNotEmpty) {
       _speakWithTypewriter(message.content);
     }
@@ -287,7 +288,9 @@ class _Liya3dKioskWidgetState extends State<Liya3dKioskWidget> {
     ));
     
     try {
-      final response = await _avatarService.generateSpeech(text);
+      // Strip markdown/URLs for clean TTS, keep original text for display
+      final ttsText = Liya3dTtsUtils.stripForTTS(text);
+      final response = await _avatarService.generateSpeech(ttsText);
       
       if (response.success && response.data != null && mounted) {
         final speechData = response.data!;

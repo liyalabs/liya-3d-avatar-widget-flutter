@@ -1,12 +1,14 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/liya3d_message.dart';
 import '../models/liya3d_enums.dart';
 import '../utils/liya3d_colors.dart';
 import '../utils/liya3d_glass_decoration.dart';
 
 /// Chat message bubble with Liquid Glass styling
-class Liya3dMessageBubble extends StatelessWidget {
+class Liya3dMessageBubble extends StatefulWidget {
   /// The message to display
   final Liya3dMessage message;
 
@@ -23,15 +25,31 @@ class Liya3dMessageBubble extends StatelessWidget {
     this.maxWidthRatio = 0.8,
   });
 
-  bool get isUser => message.role == Liya3dMessageRole.user;
+  @override
+  State<Liya3dMessageBubble> createState() => _Liya3dMessageBubbleState();
+}
+
+class _Liya3dMessageBubbleState extends State<Liya3dMessageBubble> {
+  bool _copySuccess = false;
+
+  bool get isUser => widget.message.role == Liya3dMessageRole.user;
+
+  Future<void> _handleCopy() async {
+    await Clipboard.setData(ClipboardData(text: widget.message.content));
+    if (!mounted) return;
+    setState(() => _copySuccess = true);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _copySuccess = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final maxWidth = screenWidth * maxWidthRatio;
+    final maxWidth = screenWidth * widget.maxWidthRatio;
 
     // Typing indicator
-    if (message.isTyping) {
+    if (widget.message.isTyping) {
       return _buildTypingIndicator();
     }
 
@@ -63,21 +81,24 @@ class Liya3dMessageBubble extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Message content
-                      Text(
-                        message.content,
-                        style: TextStyle(
-                          color: Liya3dColors.textLight,
-                          fontSize: 14,
-                          height: 1.4,
+                      // Message content — render markdown for assistant
+                      if (!isUser)
+                        _MarkdownBody(text: widget.message.content)
+                      else
+                        Text(
+                          widget.message.content,
+                          style: TextStyle(
+                            color: Liya3dColors.textLight,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
                         ),
-                      ),
                       // Response time (for assistant messages)
-                      if (!isUser && message.responseTime != null)
+                      if (!isUser && widget.message.responseTime != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            '${message.responseTime!.toStringAsFixed(1)}s',
+                            '${widget.message.responseTime!.toStringAsFixed(1)}s',
                             style: TextStyle(
                               color: Liya3dColors.textMuted,
                               fontSize: 10,
@@ -89,10 +110,34 @@ class Liya3dMessageBubble extends StatelessWidget {
                 ),
               ),
             ),
+            // Copy button (assistant messages only)
+            if (!isUser && widget.message.content.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: GestureDetector(
+                  onTap: _handleCopy,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      color: Colors.transparent,
+                    ),
+                    child: Icon(
+                      _copySuccess ? Icons.check : Icons.copy_outlined,
+                      size: 14,
+                      color: _copySuccess
+                          ? const Color(0xFF22C55E)
+                          : Liya3dColors.textMuted,
+                    ),
+                  ),
+                ),
+              ),
             // Suggestions (for assistant messages)
             if (!isUser &&
-                message.suggestions != null &&
-                message.suggestions!.isNotEmpty)
+                widget.message.suggestions != null &&
+                widget.message.suggestions!.isNotEmpty)
               _buildSuggestions(),
           ],
         ),
@@ -148,7 +193,7 @@ class Liya3dMessageBubble extends StatelessWidget {
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: Liya3dColors.textMuted.withOpacity(0.5 + (value * 0.5)),
+            color: Liya3dColors.textMuted.withValues(alpha: 0.5 + (value * 0.5)),
             shape: BoxShape.circle,
           ),
         );
@@ -162,9 +207,9 @@ class Liya3dMessageBubble extends StatelessWidget {
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: message.suggestions!.map((suggestion) {
+        children: widget.message.suggestions!.map((suggestion) {
           return GestureDetector(
-            onTap: () => onSuggestionTap?.call(suggestion),
+            onTap: () => widget.onSuggestionTap?.call(suggestion),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: Liya3dGlassDecoration.suggestionChip(),
@@ -180,5 +225,170 @@ class Liya3dMessageBubble extends StatelessWidget {
         }).toList(),
       ),
     );
+  }
+}
+
+/// Lightweight markdown renderer for chat messages.
+/// Supports: bold, italic, links, inline code, headings, lists.
+class _MarkdownBody extends StatelessWidget {
+  final String text;
+  const _MarkdownBody({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.isEmpty) return const SizedBox.shrink();
+    return Text.rich(
+      _parseMarkdown(text),
+      style: TextStyle(
+        color: Liya3dColors.textLight,
+        fontSize: 14,
+        height: 1.4,
+      ),
+    );
+  }
+
+  TextSpan _parseMarkdown(String input) {
+    final spans = <InlineSpan>[];
+    // Split into lines for heading/list detection
+    final lines = input.split('\n');
+
+    for (int i = 0; i < lines.length; i++) {
+      if (i > 0) spans.add(const TextSpan(text: '\n'));
+      var line = lines[i];
+
+      // Headings (# ## ###)
+      final headingMatch = RegExp(r'^#{1,3}\s+(.+)$').firstMatch(line);
+      if (headingMatch != null) {
+        spans.addAll(_parseInline(headingMatch.group(1)!, bold: true));
+        continue;
+      }
+
+      // List items (- or *)
+      final listMatch = RegExp(r'^[-*]\s+(.+)$').firstMatch(line);
+      if (listMatch != null) {
+        spans.add(const TextSpan(text: '• '));
+        spans.addAll(_parseInline(listMatch.group(1)!));
+        continue;
+      }
+
+      // Numbered list
+      final numMatch = RegExp(r'^\d+\.\s+(.+)$').firstMatch(line);
+      if (numMatch != null) {
+        final num = RegExp(r'^(\d+\.)').firstMatch(line)!.group(1)!;
+        spans.add(TextSpan(text: '$num '));
+        spans.addAll(_parseInline(numMatch.group(1)!));
+        continue;
+      }
+
+      spans.addAll(_parseInline(line));
+    }
+
+    return TextSpan(children: spans);
+  }
+
+  /// Parse inline markdown: bold, italic, links, inline code
+  List<InlineSpan> _parseInline(String text, {bool bold = false}) {
+    final spans = <InlineSpan>[];
+    // Pattern matches: [text](url), **bold**, *italic*, `code`
+    final regex = RegExp(
+      r'\[([^\]]+)\]\((https?://[^)]+)\)'  // markdown link
+      r'|\*\*([^*]+)\*\*'                   // bold
+      r'|\*([^*]+)\*'                        // italic
+      r'|`([^`]+)`'                          // inline code
+    );
+
+    int lastEnd = 0;
+    for (final match in regex.allMatches(text)) {
+      // Plain text before match
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastEnd, match.start),
+          style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+        ));
+      }
+
+      if (match.group(1) != null && match.group(2) != null) {
+        // Markdown link: [text](url)
+        final linkText = match.group(1)!;
+        final url = match.group(2)!;
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: GestureDetector(
+            onTap: () => _openUrl(url),
+            child: Text(
+              linkText,
+              style: TextStyle(
+                color: const Color(0xFFA5B4FC),
+                decoration: TextDecoration.underline,
+                decorationColor: const Color(0xFFA5B4FC).withValues(alpha: 0.5),
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ));
+      } else if (match.group(3) != null) {
+        // Bold
+        spans.add(TextSpan(
+          text: match.group(3),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+      } else if (match.group(4) != null) {
+        // Italic
+        spans.add(TextSpan(
+          text: match.group(4),
+          style: const TextStyle(fontStyle: FontStyle.italic),
+        ));
+      } else if (match.group(5) != null) {
+        // Inline code
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.baseline,
+          baseline: TextBaseline.alphabetic,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              match.group(5)!,
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 13,
+                color: Liya3dColors.textLight,
+              ),
+            ),
+          ),
+        ));
+      }
+
+      lastEnd = match.end;
+    }
+
+    // Remaining text after last match
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastEnd),
+        style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+      ));
+    }
+
+    // If no matches at all, return the whole text
+    if (spans.isEmpty) {
+      spans.add(TextSpan(
+        text: text,
+        style: bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
+      ));
+    }
+
+    return spans;
+  }
+
+  void _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 }
