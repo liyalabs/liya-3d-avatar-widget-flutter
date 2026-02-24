@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2025-02-24
+
+### Fixed
+- iOS microphone permission — now requests mic + speech recognition permissions on both Android and iOS
+- Added `viewport-fit=cover` to WebView meta tag for iOS safe area support
+
 ## [0.1.0] - 2024-02-17
 
 ### Added

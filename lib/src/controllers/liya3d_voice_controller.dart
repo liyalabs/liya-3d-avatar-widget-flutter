@@ -52,11 +52,20 @@ class Liya3dVoiceController extends ChangeNotifier {
     }
 
     try {
-      // Request microphone permission on Android
-      if (Platform.isAndroid) {
-        final status = await Permission.microphone.request();
-        if (!status.isGranted) {
-          _error = 'Microphone permission denied';
+      // Request microphone permission on both Android and iOS
+      final micStatus = await Permission.microphone.request();
+      if (!micStatus.isGranted) {
+        _error = 'Microphone permission denied';
+        _isAvailable = false;
+        notifyListeners();
+        return false;
+      }
+
+      // iOS also requires speech recognition permission separately
+      if (Platform.isIOS) {
+        final speechStatus = await Permission.speech.request();
+        if (!speechStatus.isGranted) {
+          _error = 'Speech recognition permission denied';
           _isAvailable = false;
           notifyListeners();
           return false;

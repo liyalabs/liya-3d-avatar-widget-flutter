@@ -1,6 +1,6 @@
 name: liya_3d_avatar_widget_flutter
 description: Liya AI 3D Talking Avatar Widget for Flutter - WebView + Three.js + Native UI
-version: 0.1.1
+version: 0.1.2
 homepage: https://liyalabs.com
 repository: https://github.com/liyalabs/liya_3d_avatar_widget_flutter
 
@@ -36,7 +36,7 @@ dependencies:
   # JSON serialization
   collection: ^1.18.0
   
-  # Runtime permissions (Android)
+  # Runtime permissions (Android + iOS)
   permission_handler: ^11.3.0
   
   # URL Launcher (for clickable links in chat)
