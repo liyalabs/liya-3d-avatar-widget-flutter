@@ -1,5 +1,6 @@
 import 'liya3d_enums.dart';
 import 'liya3d_file_attachment.dart';
+import 'liya3d_media_item.dart';
 
 /// Chat message model
 class Liya3dMessage {
@@ -24,6 +25,9 @@ class Liya3dMessage {
   /// Suggestion buttons (for assistant messages)
   final List<String>? suggestions;
 
+  /// Media items (images/videos) extracted from response
+  final List<Liya3dMediaItem>? media;
+
   /// Whether this is a temporary/optimistic message
   final bool isTemporary;
 
@@ -38,6 +42,7 @@ class Liya3dMessage {
     this.responseTime,
     this.attachments,
     this.suggestions,
+    this.media,
     this.isTemporary = false,
     this.isTyping = false,
   });
@@ -61,6 +66,11 @@ class Liya3dMessage {
       suggestions: json['suggestions'] != null
           ? List<String>.from(json['suggestions'] as List)
           : null,
+      media: json['media'] != null
+          ? (json['media'] as List)
+              .map((m) => Liya3dMediaItem.fromJson(m as Map<String, dynamic>))
+              .toList()
+          : null,
     );
   }
 
@@ -73,6 +83,7 @@ class Liya3dMessage {
       if (responseTime != null) 'response_time': responseTime,
       if (attachments != null) 'attachments': attachments!.map((a) => a.toJson()).toList(),
       if (suggestions != null) 'suggestions': suggestions,
+      if (media != null) 'media': media!.map((m) => m.toJson()).toList(),
     };
   }
 
@@ -84,6 +95,7 @@ class Liya3dMessage {
     double? responseTime,
     List<Liya3dFileAttachment>? attachments,
     List<String>? suggestions,
+    List<Liya3dMediaItem>? media,
     bool? isTemporary,
     bool? isTyping,
   }) {
@@ -95,6 +107,7 @@ class Liya3dMessage {
       responseTime: responseTime ?? this.responseTime,
       attachments: attachments ?? this.attachments,
       suggestions: suggestions ?? this.suggestions,
+      media: media ?? this.media,
       isTemporary: isTemporary ?? this.isTemporary,
       isTyping: isTyping ?? this.isTyping,
     );

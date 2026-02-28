@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/liya3d_message.dart';
 import '../models/liya3d_enums.dart';
+import '../models/liya3d_media_item.dart';
 import '../utils/liya3d_colors.dart';
 import '../utils/liya3d_glass_decoration.dart';
+import '../utils/liya3d_media_extractor.dart';
 
 /// Chat message bubble with Liquid Glass styling
 class Liya3dMessageBubble extends StatefulWidget {
@@ -15,6 +17,9 @@ class Liya3dMessageBubble extends StatefulWidget {
   /// Callback when a suggestion is tapped
   final ValueChanged<String>? onSuggestionTap;
 
+  /// Callback when media is tapped (for preview)
+  final ValueChanged<Liya3dMediaItem>? onMediaTap;
+
   /// Maximum width ratio (0.0 - 1.0)
   final double maxWidthRatio;
 
@@ -22,6 +27,7 @@ class Liya3dMessageBubble extends StatefulWidget {
     super.key,
     required this.message,
     this.onSuggestionTap,
+    this.onMediaTap,
     this.maxWidthRatio = 0.8,
   });
 
@@ -31,8 +37,31 @@ class Liya3dMessageBubble extends StatefulWidget {
 
 class _Liya3dMessageBubbleState extends State<Liya3dMessageBubble> {
   bool _copySuccess = false;
+  late Liya3dMediaExtractResult _mediaResult;
 
   bool get isUser => widget.message.role == Liya3dMessageRole.user;
+
+  @override
+  void initState() {
+    super.initState();
+    _extractMedia();
+  }
+
+  @override
+  void didUpdateWidget(covariant Liya3dMessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message.content != widget.message.content ||
+        oldWidget.message.media != widget.message.media) {
+      _extractMedia();
+    }
+  }
+
+  void _extractMedia() {
+    _mediaResult = Liya3dMediaExtractor.extract(
+      widget.message.content,
+      backendMedia: widget.message.media,
+    );
+  }
 
   Future<void> _handleCopy() async {
     await Clipboard.setData(ClipboardData(text: widget.message.content));
@@ -81,16 +110,28 @@ class _Liya3dMessageBubbleState extends State<Liya3dMessageBubble> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Message content — render markdown for assistant
-                      if (!isUser)
-                        _MarkdownBody(text: widget.message.content)
-                      else
+                      // Message content — render markdown for assistant (without media markdown)
+                      if (!isUser && _mediaResult.cleanText.isNotEmpty)
+                        _MarkdownBody(text: _mediaResult.cleanText)
+                      else if (isUser)
                         Text(
                           widget.message.content,
                           style: TextStyle(
                             color: Liya3dColors.textLight,
                             fontSize: 14,
                             height: 1.4,
+                          ),
+                        ),
+                      // Media thumbnails (images/videos)
+                      if (_mediaResult.media.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: _mediaResult.media.map((media) {
+                              return _buildMediaThumbnail(media);
+                            }).toList(),
                           ),
                         ),
                       // Response time (for assistant messages)
@@ -223,6 +264,133 @@ class _Liya3dMessageBubbleState extends State<Liya3dMessageBubble> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMediaThumbnail(Liya3dMediaItem media) {
+    return GestureDetector(
+      onTap: () => widget.onMediaTap?.call(media),
+      child: Container(
+        constraints: const BoxConstraints(
+          maxWidth: 200,
+          maxHeight: 150,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            // Image thumbnail
+            if (media.isImage)
+              Image.network(
+                media.url,
+                fit: BoxFit.cover,
+                width: 200,
+                height: 150,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    color: Colors.white.withValues(alpha: 0.05),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF6366F1),
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 200,
+                    height: 150,
+                    color: Colors.white.withValues(alpha: 0.05),
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: Liya3dColors.textMuted,
+                        size: 32,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            // Video thumbnail (placeholder with play icon)
+            if (media.isVideo)
+              Container(
+                width: 200,
+                height: 150,
+                color: Colors.black,
+                child: Stack(
+                  children: [
+                    // Video thumbnail could be loaded from thumbnailUrl if available
+                    if (media.thumbnailUrl != null)
+                      Image.network(
+                        media.thumbnailUrl!,
+                        fit: BoxFit.cover,
+                        width: 200,
+                        height: 150,
+                      ),
+                    // Play button overlay
+                    Center(
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Hint text at bottom
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.7),
+                    ],
+                  ),
+                ),
+                child: Text(
+                  media.isImage ? '🖼 Tıkla — büyüt' : '🎬 Tıkla — izle',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

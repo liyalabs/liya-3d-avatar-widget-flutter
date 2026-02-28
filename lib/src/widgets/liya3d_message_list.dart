@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/liya3d_message.dart';
+import '../models/liya3d_media_item.dart';
 import 'liya3d_message_bubble.dart';
 
 /// Scrollable message list with auto-scroll to bottom
@@ -10,6 +11,9 @@ class Liya3dMessageList extends StatefulWidget {
   /// Callback when a suggestion is tapped
   final ValueChanged<String>? onSuggestionTap;
 
+  /// Callback when media is tapped (for preview)
+  final ValueChanged<Liya3dMediaItem>? onMediaTap;
+
   /// Whether to auto-scroll to bottom on new messages
   final bool autoScroll;
 
@@ -17,6 +21,7 @@ class Liya3dMessageList extends StatefulWidget {
     super.key,
     required this.messages,
     this.onSuggestionTap,
+    this.onMediaTap,
     this.autoScroll = true,
   });
 
@@ -72,6 +77,7 @@ class _Liya3dMessageListState extends State<Liya3dMessageList> {
         return Liya3dMessageBubble(
           message: message,
           onSuggestionTap: widget.onSuggestionTap,
+          onMediaTap: widget.onMediaTap,
         );
       },
     );

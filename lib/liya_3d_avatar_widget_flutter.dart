@@ -11,6 +11,7 @@ export 'src/models/liya3d_enums.dart';
 export 'src/models/liya3d_api_response.dart';
 export 'src/models/liya3d_avatar_speech.dart';
 export 'src/models/liya3d_file_attachment.dart';
+export 'src/models/liya3d_media_item.dart';
 
 // Services
 export 'src/services/liya3d_api_service.dart';
@@ -33,6 +34,7 @@ export 'src/widgets/liya3d_message_list.dart';
 export 'src/widgets/liya3d_message_bubble.dart';
 export 'src/widgets/liya3d_chat_input.dart';
 export 'src/widgets/liya3d_premium_overlay.dart';
+export 'src/widgets/liya3d_media_preview_dialog.dart';
 
 // i18n
 export 'src/i18n/liya3d_translations.dart';
@@ -41,3 +43,4 @@ export 'src/i18n/liya3d_translations.dart';
 export 'src/utils/liya3d_colors.dart';
 export 'src/utils/liya3d_glass_decoration.dart';
 export 'src/utils/liya3d_tts_utils.dart';
+export 'src/utils/liya3d_media_extractor.dart';

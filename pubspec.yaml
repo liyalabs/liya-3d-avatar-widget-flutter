@@ -41,6 +41,9 @@ dependencies:
   
   # URL Launcher (for clickable links in chat)
   url_launcher: ^6.2.0
+  
+  # Video Player (for media preview)
+  video_player: ^2.9.2
 
 dev_dependencies:
   flutter_test:
